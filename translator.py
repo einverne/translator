@@ -1,89 +1,90 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-#======================================================================
+# ======================================================================
 #
 # translator.py - 命令行翻译（谷歌，必应，百度，有道，词霸）
 #
 # Created by skywind on 2019/06/14
 # Version: 1.0.2, Last Modified: 2019/06/18 18:40
 #
-#======================================================================
+# ======================================================================
 from __future__ import print_function, unicode_literals
-import sys
-import time
+
+import copy
 import os
 import random
-import copy
 
+import sys
+import time
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # 语言的别名
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 langmap = {
-        "arabic": "ar",
-        "bulgarian": "bg",
-        "catalan": "ca",
-        "chinese": "zh-CN",
-        "chinese simplified": "zh-CHS",
-        "chinese traditional": "zh-CHT",
-        "czech": "cs",
-        "danish": "da",	
-        "dutch": "nl",
-        "english": "en",
-        "estonian": "et",
-        "finnish": "fi",
-        "french": "fr",
-        "german": "de",
-        "greek": "el",
-        "haitian creole": "ht",
-        "hebrew": "he",
-        "hindi": "hi",
-        "hmong daw": "mww",
-        "hungarian": "hu",
-        "indonesian": "id",
-        "italian": "it",
-        "japanese": "ja",
-        "klingon": "tlh",
-        "klingon (piqad)":"tlh-Qaak",
-        "korean": "ko",
-        "latvian": "lv",
-        "lithuanian": "lt",
-        "malay": "ms",
-        "maltese": "mt",
-        "norwegian": "no",
-        "persian": "fa",
-        "polish": "pl",
-        "portuguese": "pt",
-        "romanian": "ro",
-        "russian": "ru",
-        "slovak": "sk",
-        "slovenian": "sl",
-        "spanish": "es",
-        "swedish": "sv",
-        "thai": "th",
-        "turkish": "tr",
-        "ukrainian": "uk",
-        "urdu": "ur",
-        "vietnamese": "vi",
-        "welsh": "cy"
-    }
+    "arabic": "ar",
+    "bulgarian": "bg",
+    "catalan": "ca",
+    "chinese": "zh-CN",
+    "chinese simplified": "zh-CHS",
+    "chinese traditional": "zh-CHT",
+    "czech": "cs",
+    "danish": "da",
+    "dutch": "nl",
+    "english": "en",
+    "estonian": "et",
+    "finnish": "fi",
+    "french": "fr",
+    "german": "de",
+    "greek": "el",
+    "haitian creole": "ht",
+    "hebrew": "he",
+    "hindi": "hi",
+    "hmong daw": "mww",
+    "hungarian": "hu",
+    "indonesian": "id",
+    "italian": "it",
+    "japanese": "ja",
+    "klingon": "tlh",
+    "klingon (piqad)": "tlh-Qaak",
+    "korean": "ko",
+    "latvian": "lv",
+    "lithuanian": "lt",
+    "malay": "ms",
+    "maltese": "mt",
+    "norwegian": "no",
+    "persian": "fa",
+    "polish": "pl",
+    "portuguese": "pt",
+    "romanian": "ro",
+    "russian": "ru",
+    "slovak": "sk",
+    "slovenian": "sl",
+    "spanish": "es",
+    "swedish": "sv",
+    "thai": "th",
+    "turkish": "tr",
+    "ukrainian": "uk",
+    "urdu": "ur",
+    "vietnamese": "vi",
+    "welsh": "cy"
+}
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # BasicTranslator
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 class BasicTranslator(object):
 
-    def __init__ (self, name, **argv):
+    def __init__(self, name, **argv):
         self._name = name
-        self._config = {}  
+        self._config = {}
         self._options = argv
         self._session = None
         self._agent = None
         self._load_config(name)
         self._check_proxy()
 
-    def __load_ini (self, ininame, codec = None):
+    def __load_ini(self, ininame, codec=None):
         config = {}
         if not ininame:
             return None
@@ -116,7 +117,7 @@ class BasicTranslator(object):
             cp.readfp(sio)
         else:
             import configparser
-            cp = configparser.ConfigParser(interpolation = None)
+            cp = configparser.ConfigParser(interpolation=None)
             cp.read_string(text)
         for sect in cp.sections():
             for key, val in cp.items(sect):
@@ -126,7 +127,7 @@ class BasicTranslator(object):
             config['default'] = {}
         return config
 
-    def _load_config (self, name):
+    def _load_config(self, name):
         self._config = {}
         ininame = os.path.expanduser('~/.config/translator/config.ini')
         config = self.__load_ini(ininame)
@@ -138,7 +139,7 @@ class BasicTranslator(object):
                 self._config[key] = items[key]
         return True
 
-    def _check_proxy (self):
+    def _check_proxy(self):
         proxy = os.environ.get('all_proxy', None)
         if not proxy:
             return False
@@ -148,7 +149,7 @@ class BasicTranslator(object):
             self._config['proxy'] = proxy.strip()
         return True
 
-    def request (self, url, data = None, post = False, header = None):
+    def request(self, url, data=None, post=False, header=None):
         import requests
         if not self._session:
             self._session = requests.Session()
@@ -179,13 +180,13 @@ class BasicTranslator(object):
             r = self._session.post(url, **argv)
         return r
 
-    def http_get (self, url, data = None, header = None):
+    def http_get(self, url, data=None, header=None):
         return self.request(url, data, False, header)
 
-    def http_post (self, url, data = None, header = None):
+    def http_post(self, url, data=None, header=None):
         return self.request(url, data, True, header)
 
-    def url_unquote (self, text, plus = True):
+    def url_unquote(self, text, plus=True):
         if sys.version_info[0] < 3:
             import urllib
             if plus:
@@ -196,7 +197,7 @@ class BasicTranslator(object):
             return urllib.parse.unquote_plus(text)
         return urllib.parse.unquote(text)
 
-    def url_quote (self, text, plus = True):
+    def url_quote(self, text, plus=True):
         if sys.version_info[0] < 3:
             import urllib
             if plus:
@@ -208,26 +209,26 @@ class BasicTranslator(object):
         return urllib.parse.quote(text)
 
     # 翻译结果：需要填充如下字段
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         res = {}
-        res['sl'] = sl              # 来源语言
-        res['tl'] = sl              # 目标语言
-        res['text'] = text          # 需要翻译的文本
-        res['translation'] = None   # 翻译结果
-        res['html'] = None          # HTML 格式的翻译结果（如果有的话）
-        res['xterm'] = None         # ASCII 色彩输出（如果有的话）
-        res['info'] = None          # 原始网站的返回值
+        res['sl'] = sl  # 来源语言
+        res['tl'] = sl  # 目标语言
+        res['text'] = text  # 需要翻译的文本
+        res['translation'] = None  # 翻译结果
+        res['html'] = None  # HTML 格式的翻译结果（如果有的话）
+        res['xterm'] = None  # ASCII 色彩输出（如果有的话）
+        res['info'] = None  # 原始网站的返回值
         return res
 
     # 是否是英文
-    def check_english (self, text):
+    def check_english(self, text):
         for ch in text:
             if ord(ch) >= 128:
                 return False
         return True
 
     # 猜测语言
-    def guess_language (self, sl, tl, text):
+    def guess_language(self, sl, tl, text):
         if ((not sl) or sl == 'auto') and ((not tl) or tl == 'auto'):
             if self.check_english(text):
                 sl, tl = ('en-US', 'zh-CN')
@@ -238,8 +239,8 @@ class BasicTranslator(object):
         if tl.lower() in langmap:
             tl = langmap[tl.lower()]
         return sl, tl
-    
-    def md5sum (self, text):
+
+    def md5sum(self, text):
         import hashlib
         m = hashlib.md5()
         if sys.version_info[0] < 3:
@@ -252,19 +253,19 @@ class BasicTranslator(object):
         return m.hexdigest()
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Azure Translator
-#----------------------------------------------------------------------
-class AzureTranslator (BasicTranslator):
+# ----------------------------------------------------------------------
+class AzureTranslator(BasicTranslator):
 
-    def __init__ (self, **argv):
+    def __init__(self, **argv):
         super(AzureTranslator, self).__init__('azure', **argv)
         if 'apikey' not in self._config:
             sys.stderr.write('error: missing apikey in [azure] section\n')
             sys.exit()
         self.apikey = self._config['apikey']
 
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         import uuid
         sl, tl = self.guess_language(sl, tl, text)
         qs = self.url_quote(sl)
@@ -276,7 +277,7 @@ class AzureTranslator (BasicTranslator):
             'Content-type': 'application/json',
             'X-ClientTraceId': str(uuid.uuid4())
         }
-        body = [{'text' : text}]
+        body = [{'text': text}]
         import json
         resp = self.http_post(url, json.dumps(body), headers).json()
         # print(resp)
@@ -289,7 +290,7 @@ class AzureTranslator (BasicTranslator):
         res['xterm'] = None
         return res
 
-    def render (self, resp):
+    def render(self, resp):
         if not resp:
             return ''
         x = resp[0]
@@ -304,25 +305,25 @@ class AzureTranslator (BasicTranslator):
         return output
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Google Translator
-#----------------------------------------------------------------------
-class GoogleTranslator (BasicTranslator):
+# ----------------------------------------------------------------------
+class GoogleTranslator(BasicTranslator):
 
-    def __init__ (self, **argv):
+    def __init__(self, **argv):
         super(GoogleTranslator, self).__init__('google', **argv)
         self._agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0)'
         self._agent += ' Gecko/20100101 Firefox/59.0'
 
-    def get_url (self, sl, tl, qry):
+    def get_url(self, sl, tl, qry):
         http_host = self._config.get('host', 'translate.googleapis.com')
         qry = self.url_quote(qry)
         url = 'https://{}/translate_a/single?client=gtx&sl={}&tl={}&dt=at&dt=bd&dt=ex&' \
               'dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&q={}'.format(
-                      http_host, sl, tl, qry)
+            http_host, sl, tl, qry)
         return url
 
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         sl, tl = self.guess_language(sl, tl, text)
         self.text = text
         url = self.get_url(sl, tl, text)
@@ -336,7 +337,7 @@ class GoogleTranslator (BasicTranslator):
         res['html'] = None
         return res
 
-    def render (self, obj):
+    def render(self, obj):
         result = self.get_result('', obj) + '\n'
         result = self.get_synonym(result, obj)
         if len(obj) >= 13 and obj[12]:
@@ -345,13 +346,13 @@ class GoogleTranslator (BasicTranslator):
             result = self.get_alternative(result, obj)
         return result
 
-    def get_result (self, result, obj):
+    def get_result(self, result, obj):
         for x in obj[0]:
             if x[0]:
                 result += x[0]
         return result
 
-    def get_synonym (self, result, resp):
+    def get_synonym(self, result, resp):
         if resp[1]:
             result += '\n-------------\n'
             result += 'Translations\n'
@@ -362,7 +363,7 @@ class GoogleTranslator (BasicTranslator):
                     result += '{}: {}\n'.format(i[0], ", ".join(i[1]))
         return result
 
-    def get_definitions (self, result, resp):
+    def get_definitions(self, result, resp):
         result += '\n-------------\n'
         result += 'Definitions\n'
         for x in resp[12]:
@@ -373,7 +374,7 @@ class GoogleTranslator (BasicTranslator):
                 result += '  * {}\n'.format(y[2]) if len(y) >= 3 else ''
         return result
 
-    def get_alternative (self, result, resp):
+    def get_alternative(self, result, resp):
         if len(resp) < 6 or (not resp[5]):
             return result
         result += '\n-------------\n'
@@ -385,29 +386,28 @@ class GoogleTranslator (BasicTranslator):
         return result
 
 
-
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Youdao Translator
-#----------------------------------------------------------------------
-class YoudaoTranslator (BasicTranslator):
+# ----------------------------------------------------------------------
+class YoudaoTranslator(BasicTranslator):
 
-    def __init__ (self, **argv):
+    def __init__(self, **argv):
         super(YoudaoTranslator, self).__init__('youdao', **argv)
         self.url = 'https://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule'
         self.D = "ebSeFb%=XZ%T[KZ)c(sy!"
 
-    def get_md5 (self, value):
+    def get_md5(self, value):
         import hashlib
         m = hashlib.md5()
         # m.update(value)
         m.update(value.encode('utf-8'))
         return m.hexdigest()
 
-    def sign (self, text, salt):
+    def sign(self, text, salt):
         s = "fanyideskweb" + text + salt + self.D
         return self.get_md5(s)
 
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         sl, tl = self.guess_language(sl, tl, text)
         self.text = text
         salt = str(int(time.time() * 1000) + random.randint(0, 10))
@@ -420,7 +420,7 @@ class YoudaoTranslator (BasicTranslator):
         data = {
             'i': text,
             'from': sl,
-            'to': tl, 
+            'to': tl,
             'smartresult': 'dict',
             'client': 'fanyideskweb',
             'salt': salt,
@@ -444,7 +444,7 @@ class YoudaoTranslator (BasicTranslator):
         res['xterm'] = None
         return res
 
-    def render (self, obj):
+    def render(self, obj):
         output = ''
         t = obj.get('translateResult')
         if t:
@@ -466,18 +466,18 @@ class YoudaoTranslator (BasicTranslator):
         return output
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Bing2: 免费 web 接口，只能查单词
-#----------------------------------------------------------------------
-class BingDict (BasicTranslator):
+# ----------------------------------------------------------------------
+class BingDict(BasicTranslator):
 
-    def __init__ (self, **argv):
+    def __init__(self, **argv):
         super(BingDict, self).__init__('bingdict', **argv)
         self._agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101'
         self._agent += ' Firefox/50.0'
         self._url = 'http://cn.bing.com/dict/SerpHoverTrans'
 
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         url = self._url + '?q=' + self.url_quote(text)
         headers = {
             'Host': 'cn.bing.com',
@@ -494,7 +494,7 @@ class BingDict (BasicTranslator):
         res['translation'] = self.render(text, resp.text)
         return res
 
-    def render (self, word, html):
+    def render(self, word, html):
         from bs4 import BeautifulSoup
         if not html:
             return ''
@@ -512,13 +512,12 @@ class BingDict (BasicTranslator):
         return '\n'.join(trans)
 
 
-
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Baidu Translator
-#----------------------------------------------------------------------
-class BaiduTranslator (BasicTranslator):
+# ----------------------------------------------------------------------
+class BaiduTranslator(BasicTranslator):
 
-    def __init__ (self, **argv):
+    def __init__(self, **argv):
         super(BaiduTranslator, self).__init__('baidu', **argv)
         if 'apikey' not in self._config:
             sys.stderr.write('error: missing apikey in [baidu] section\n')
@@ -529,22 +528,22 @@ class BaiduTranslator (BasicTranslator):
         self.apikey = self._config['apikey']
         self.secret = self._config['secret']
         langmap = {
-                'zh-cn': 'zh',
-                'zh-chs': 'zh',
-                'zh-cht': 'cht',
-                'en-us': 'en', 
-                'en-gb': 'en',
-                'ja': 'jp',
-            }
+            'zh-cn': 'zh',
+            'zh-chs': 'zh',
+            'zh-cht': 'cht',
+            'en-us': 'en',
+            'en-gb': 'en',
+            'ja': 'jp',
+        }
         self.langmap = langmap
 
-    def convert_lang (self, lang):
+    def convert_lang(self, lang):
         t = lang.lower()
         if t in self.langmap:
             return self.langmap[t]
         return lang
 
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         sl, tl = self.guess_language(sl, tl, text)
         req = {}
         req['q'] = text
@@ -566,11 +565,11 @@ class BaiduTranslator (BasicTranslator):
         res['xterm'] = None
         return res
 
-    def sign (self, text, salt):
+    def sign(self, text, salt):
         t = self.apikey + text + salt + self.secret
         return self.md5sum(t)
 
-    def render (self, resp):
+    def render(self, resp):
         output = ''
         result = resp['trans_result']
         for item in result:
@@ -579,15 +578,15 @@ class BaiduTranslator (BasicTranslator):
         return output
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # 词霸
-#----------------------------------------------------------------------
-class CibaTranslator (BasicTranslator):
+# ----------------------------------------------------------------------
+class CibaTranslator(BasicTranslator):
 
-    def __init__ (self, **argv):
+    def __init__(self, **argv):
         super(CibaTranslator, self).__init__('ciba', **argv)
 
-    def translate (self, sl, tl, text):
+    def translate(self, sl, tl, text):
         sl, tl = self.guess_language(sl, tl, text)
         url = 'https://fy.iciba.com/ajax.php'
         req = {}
@@ -610,10 +609,66 @@ class CibaTranslator (BasicTranslator):
         return res
 
 
-#----------------------------------------------------------------------
+class YandexTranslator(BasicTranslator):
+    """
+    https://tech.yandex.com/translate/doc/dg/concepts/about-docpage/
+    """
+
+    def __init__(self, **argv):
+        super(YandexTranslator, self).__init__("yandex", **argv)
+        if 'apikey' not in self._config:
+            sys.stderr.write('error: missing apikey in [yandex] section\n')
+            sys.exit()
+        self.apikey = self._config['apikey']
+
+    def detect_lang(self, text):
+        url = 'https://translate.yandex.net/api/v1.5/tr.json/detect'
+        req = {
+            'key': self.apikey,
+            'text': text
+        }
+        r = self.http_get(url, req)
+        resp = r.json()
+        if 'code' in resp and resp['code'] == 200:
+            return resp['lang']
+        return ''
+
+    def guess_language(self, sl, tl, text):
+        sl = self.detect_lang(text)
+        if (not tl) or tl == 'auto':
+            if sl != 'zh':
+                tl = 'zh'
+            else:
+                tl = 'en'
+        return sl, tl
+
+    def translate(self, sl, tl, text):
+        sl, tl = self.guess_language(sl, tl, text)
+        url = 'https://translate.yandex.net/api/v1.5/tr.json/translate'
+        req = {
+            'key': self.apikey,
+            'text': text,
+            'lang': sl + '-' + tl
+        }
+        r = self.http_get(url, req)
+        resp = r.json()
+        res = {}
+        res['sl'] = sl
+        res['tl'] = tl
+        res['text'] = text
+        res['translation'] = None
+        res['html'] = None
+        res['xterm'] = None
+        res['info'] = None
+        if 'code' in resp and resp['code'] == 200:
+            res['translation'] = '\n'.join(resp['text'])
+        return res
+
+
+# ----------------------------------------------------------------------
 # 分析命令行参数
-#----------------------------------------------------------------------
-def getopt (argv):
+# ----------------------------------------------------------------------
+def getopt(argv):
     args = []
     options = {}
     if argv is None:
@@ -638,26 +693,27 @@ def getopt (argv):
     return options, args
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # 引擎注册
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 ENGINES = {
-        'google': GoogleTranslator,
-        'azure': AzureTranslator,
-        'baidu': BaiduTranslator,
-        'youdao': YoudaoTranslator,
-        'bing': BingDict,
-        'ciba': CibaTranslator,
-    }
+    'google': GoogleTranslator,
+    'azure': AzureTranslator,
+    'baidu': BaiduTranslator,
+    'youdao': YoudaoTranslator,
+    'bing': BingDict,
+    'ciba': CibaTranslator,
+    'yandex': YandexTranslator
+}
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # 主程序
-#----------------------------------------------------------------------
-def main(argv = None):
+# ----------------------------------------------------------------------
+def main(argv=None):
     if argv is None:
         argv = sys.argv
-    argv = [ n for n in argv ]
+    argv = [n for n in argv]
     options, args = getopt(argv[1:])
     engine = options.get('engine')
     if not engine:
@@ -687,27 +743,16 @@ def main(argv = None):
     return 0
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # testing suit
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 if __name__ == '__main__':
     def test1():
         bt = BasicTranslator('test')
         r = bt.request("http://www.baidu.com")
         print(r.text)
         return 0
-    def test2():
-        gt = GoogleTranslator()
-        # r = gt.translate('auto', 'auto', 'Hello, World !!')
-        # r = gt.translate('auto', 'auto', '你吃饭了没有?')
-        # r = gt.translate('auto', 'auto', '长')
-        r = gt.translate('auto', 'auto', 'long')
-        # r = gt.translate('auto', 'auto', 'kiss')
-        # r = gt.translate('auto', 'auto', '亲吻')
-        import pprint
-        print(r['translation'])
-        # pprint.pprint(r['info'])
-        return 0
+
     def test3():
         t = YoudaoTranslator()
         r = t.translate('auto', 'auto', 'kiss')
@@ -715,12 +760,16 @@ if __name__ == '__main__':
         pprint.pprint(r)
         print(r['translation'])
         return 0
+
+
     def test4():
         t = AzureTranslator()
         r = t.translate('', 'japanese', '吃饭没有？')
         # print(r['info'])
         # print()
         print(r['translation'])
+
+
     def test5():
         t = BaiduTranslator()
         r = t.translate('', '', '吃饭了没有?')
@@ -728,12 +777,16 @@ if __name__ == '__main__':
         pprint.pprint(r)
         print(r['translation'])
         return 0
+
+
     def test6():
         t = CibaTranslator()
         r = t.translate('', '', '吃饭没有？')
         # print(r['info'])
         # print()
         print(r['translation'])
+
+
     def test9():
         argv = ['', '正在测试翻译一段话']
         main(argv)
@@ -741,8 +794,9 @@ if __name__ == '__main__':
         argv = ['', '--engine=youdao', '正在测试翻译一段话']
         main(argv)
         return 0
+
+
     # test6()
+
     main()
-
-
-
+    # test3()
