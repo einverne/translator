@@ -394,7 +394,8 @@ class YoudaoTranslator(BasicTranslator):
     def __init__(self, **argv):
         super(YoudaoTranslator, self).__init__('youdao', **argv)
         self.url = 'https://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule'
-        self.D = "ebSeFb%=XZ%T[KZ)c(sy!"
+        # self.D = "97_3(jkMYg@T[KZQmqjTK"
+        self.D = "n%A-rKaT5fb[Gy?;N5@Tj"
 
     def get_md5(self, value):
         import hashlib
@@ -404,19 +405,21 @@ class YoudaoTranslator(BasicTranslator):
         return m.hexdigest()
 
     def sign(self, text, salt):
-        s = "fanyideskweb" + text + salt + self.D
+        s = "fanyideskweb" + text + str(salt) + self.D
         return self.get_md5(s)
 
     def translate(self, sl, tl, text):
         sl, tl = self.guess_language(sl, tl, text)
         self.text = text
-        salt = str(int(time.time() * 1000) + random.randint(0, 10))
+        ts = int(time.time() * 1000)
+        salt = str(ts * 10 + random.randint(0, 10))
         sign = self.sign(text, salt)
         header = {
             'Cookie': 'OUTFOX_SEARCH_USER_ID=-2022895048@10.168.8.76;',
             'Referer': 'http://fanyi.youdao.com/',
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.2; rv:51.0) Gecko/20100101 Firefox/51.0',
         }
+        app_version = '5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'
         data = {
             'i': text,
             'from': sl,
@@ -425,11 +428,12 @@ class YoudaoTranslator(BasicTranslator):
             'client': 'fanyideskweb',
             'salt': salt,
             'sign': sign,
+            'ts': ts,
+            'bv': self.get_md5(app_version),
             'doctype': 'json',
             'version': '2.1',
             'keyfrom': 'fanyi.web',
-            'action': 'FY_BY_CL1CKBUTTON',
-            'typoResult': 'true'
+            'action': 'FY_BY_REALTIME',
         }
         r = self.http_post(self.url, data, header)
         obj = r.json()

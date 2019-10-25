@@ -28,6 +28,11 @@ class TestTranslator(unittest.TestCase):
         # pprint.pprint(r['info'])
         return 0
 
+    def test_youdao(self):
+        y = YoudaoTranslator()
+        r = y.translate("AUTO", "AUTO", TestTranslator.EN)
+        print(r['translation'])
+
     def test_yandex(self):
         y = YandexTranslator()
         # EN auto to ZH
